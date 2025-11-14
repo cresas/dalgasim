@@ -40,6 +40,11 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             border: 1px solid #75e0cb;
         }
+        
+        .top-controls { 
+            /* Buton kaldırıldığı için gizlendi */
+            display: none; 
+        } 
 
         .bottom-controls {
             margin-top: 10px;
@@ -58,17 +63,6 @@
             font-size: 2.2em;
             font-weight: bold;
             color: #333;
-        }
-
-        .top-controls button {
-            padding: 5px 10px;
-            background-color: #eee;
-            border: 2px solid #aaa;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.8em;
-            flex-shrink: 0;
-            margin-left: 10px;
         }
 
         main {
@@ -211,11 +205,10 @@
 
     <div class="top-container">
         <div class="timer-display">
-            <span id="time-display">0.00</span> saniye
+            <span id="time-display">0,00</span> saniye
         </div>
         <div class="top-controls">
-            <button id="mode-toggle-button">Dalgayı parçacıklar halinde göster</button>
-        </div>
+            </div>
     </div>
 
     <main>
@@ -224,11 +217,11 @@
     
     <footer>
         <div class="data-panel">
-            <p>Frekans: <span id="frequency-display">0.067</span> Hz</p>
+            <p>Frekans: <span id="frequency-display">0,067</span> Hz</p>
             <p>Periyot: <span id="period-display">15</span> s</p>
             <p>Dalga Sürati: <span id="wavespeed-display">100</span> cm/s</p>
             <p>Dalga boyu: <span id="wavelength-display">1493</span> cm</p>
-            <p>Genlik: <span id="amplitude-display">2.0</span> cm</p>
+            <p>Genlik: <span id="amplitude-display">2,0</span> cm</p>
         </div>
         
         <div class="slider-panel">
@@ -236,7 +229,7 @@
                 <label for="frequency-slider">Frekans</label>
                 <div class="slider-wrapper">
                     <input type="range" id="frequency-slider" min="0.01" max="1" step="0.001" value="0.067">
-                    <div class="slider-value-display" id="frequency-slider-value">0.067 Hz</div>
+                    <div class="slider-value-display" id="frequency-slider-value">0,067 Hz</div>
                 </div>
             </div>
             <div class="slider-group">
@@ -250,7 +243,7 @@
                 <label for="amplitude-slider">Dalga Genliği</label>
                 <div class="slider-wrapper">
                     <input type="range" id="amplitude-slider" min="0.5" max="2" step="0.1" value="2.0">
-                    <div class="slider-value-display" id="amplitude-slider-value">2.0 cm</div>
+                    <div class="slider-value-display" id="amplitude-slider-value">2,0 cm</div>
                 </div>
             </div>
         </div>
@@ -274,7 +267,7 @@
             const slowMoButton = document.getElementById('slow-motion-button');
             const realTimeButton = document.getElementById('real-time-button');
             const fastMoButton = document.getElementById('fast-motion-button');
-            const modeToggleButton = document.getElementById('mode-toggle-button'); 
+            // Mod butonu kaldırıldı
             const freqSlider = document.getElementById('frequency-slider');
             const speedSlider = document.getElementById('wavespeed-slider');
             const ampSlider = document.getElementById('amplitude-slider');
@@ -293,9 +286,6 @@
             let isPaused = false;
             let elapsedTime = 0;
             let lastTimestamp = 0;
-            let isParticleMode = false;
-            let particles = [];
-            const PARTICLE_COUNT = 500;
             
             let centerY;
             let pixelsPerCmX;
@@ -304,23 +294,19 @@
             const dotPositionsCm = [150, 500, 900];
             const ASPECT_RATIO = 300 / 800;
 
-            // --- YENİ JS: Boylamsal Dalga için Yer Değiştirme Genliği ---
-            // 1 kare (20px) hareket için, 20px / (800px / 1000cm) = 25cm'lik bir genliğe ihtiyacımız var.
-            const LONGITUDINAL_DISPLACEMENT_AMP_CM = 25.0;
-            // --- YENİ JS BİTİŞİ ---
+            // Ondalık sayıları virgül ile formatlamak için yardımcı fonksiyon
+            const formatToLocale = (number, fixed) => {
+                return number.toFixed(fixed).replace('.', ',');
+            };
 
             // 3. Event Listener'lar
-            freqSlider.addEventListener('input', (e) => {
-                state.frequency = parseFloat(e.target.value);
+            freqSlider.addEventListener('input', () => {
                 calculateAndUpdateUI_fromInputs(); 
             });
-            speedSlider.addEventListener('input', (e) => {
-                state.waveSpeed = parseFloat(e.target.value);
+            speedSlider.addEventListener('input', () => {
                 calculateAndUpdateUI_fromInputs();
             });
-            ampSlider.addEventListener('input', (e) => {
-                state.amplitude = parseFloat(e.target.value);
-                initializeParticles(); 
+            ampSlider.addEventListener('input', () => {
                 calculateAndUpdateUI_fromInputs();
             });
 
@@ -341,11 +327,6 @@
                 updateActiveButton(fastMoButton);
             });
 
-            modeToggleButton.addEventListener('click', () => {
-                isParticleMode = !isParticleMode;
-                modeToggleButton.textContent = isParticleMode ? "Dalgayı ip halinde göster" : "Dalgayı parçacıklar halinde göster";
-            });
-
             // 4. updateActiveButton Fonksiyonu
             function updateActiveButton(activeButton) {
                 [pauseButton, slowMoButton, realTimeButton, fastMoButton].forEach(btn => {
@@ -359,7 +340,7 @@
                 }
             }
 
-            // 5. calculateAndUpdateUI_fromInputs Fonksiyonu
+            // 5. calculateAndUpdateUI_fromInputs Fonksiyonu (VİRGÜL İLE GÜNCELLENDİ)
             function calculateAndUpdateUI_fromInputs() {
                 state.frequency = parseFloat(freqSlider.value);
                 state.waveSpeed = parseFloat(speedSlider.value);
@@ -367,38 +348,24 @@
                 state.period = 1 / state.frequency;
                 state.wavelength = state.waveSpeed / state.frequency;
 
-                freqDisplay.textContent = state.frequency.toFixed(3); 
+                freqDisplay.textContent = formatToLocale(state.frequency, 3); 
                 periodDisplay.textContent = state.period.toFixed(0);
                 speedDisplay.textContent = state.waveSpeed.toFixed(0); 
                 wavelengthDisplay.textContent = state.wavelength.toFixed(0);
-                ampDisplay.textContent = state.amplitude.toFixed(1); 
+                ampDisplay.textContent = formatToLocale(state.amplitude, 1); 
 
-                freqSliderValue.textContent = `${state.frequency.toFixed(3)} Hz`;
+                freqSliderValue.textContent = `${formatToLocale(state.frequency, 3)} Hz`;
                 speedSliderValue.textContent = `${state.waveSpeed.toFixed(0)} cm/s`;
-                ampSliderValue.textContent = `${state.amplitude.toFixed(1)} cm`;
+                ampSliderValue.textContent = `${formatToLocale(state.amplitude, 1)} cm`;
             }
 
-            // 6. initializeParticles Fonksiyonu (GÜNCELLENDİ)
-            function initializeParticles() {
-                particles = [];
-                // Dikey dağılımı slider'daki genliğe (piksel cinsinden) göre ayarla
-                const verticalSpreadPx = state.amplitude * pixelsPerCmY; 
-                for (let i = 0; i < PARTICLE_COUNT; i++) {
-                    particles.push({
-                        x_cm: Math.random() * canvasWidthCm, 
-                        // Dikey denge konumu (Boylamsal dalga için)
-                        y_pixel_equilibrium: centerY + (Math.random() * 2 - 1) * verticalSpreadPx
-                    });
-                }
-            }
-
-            // 7. Dalga Osilasyon Fonksiyonu
+            // 6. Dalga Osilasyon Fonksiyonu
             // -1 ile +1 arası bir değer döndürür
             const getWaveOscillation = (x_cm, t, k, omega) => {
                 return Math.sin(omega * t - k * x_cm);
             };
 
-            // 8. RESPONSIVE CANVAS FONKSİYONU
+            // 7. RESPONSIVE CANVAS FONKSİYONU
             function checkResize() {
                 const currentWidth = canvas.clientWidth;
                 if (currentWidth !== canvas.width) {
@@ -406,11 +373,10 @@
                     canvas.height = currentWidth * ASPECT_RATIO;
                     centerY = canvas.height / 2;
                     pixelsPerCmX = canvas.width / canvasWidthCm;
-                    initializeParticles();
                 }
             }
 
-            // 9. Ana Animasyon Döngüsü
+            // 8. Ana Animasyon Döngüsü
             function draw(timestamp) {
                 checkResize();
 
@@ -424,10 +390,11 @@
                 
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                const A_cm = state.amplitude; // Slider'daki genlik (2.0 cm)
+                const A_cm = state.amplitude; // Slider'daki genlik
                 const k = (2 * Math.PI) / state.wavelength; 
                 const omega = 2 * Math.PI * state.frequency; 
 
+                // Denge çizgisini çiz
                 ctx.beginPath();
                 ctx.moveTo(0, centerY);
                 ctx.lineTo(canvas.width, centerY);
@@ -435,17 +402,15 @@
                 ctx.lineWidth = 1; 
                 ctx.stroke();
 
-                if (isParticleMode) {
-                    drawParticles(A_cm, k, omega);
-                } else {
-                    drawRope(A_cm, k, omega);
-                }
+                // Sadece Enine Dalga (İp) çizilir
+                drawRope(A_cm, k, omega); 
                 
-                timeDisplay.textContent = elapsedTime.toFixed(2);
+                // Zaman gösteriminde de virgül kullanıldı
+                timeDisplay.textContent = formatToLocale(elapsedTime, 2);
                 requestAnimationFrame(draw);
             }
 
-            // 10. drawRope Fonksiyonu (Enine Dalga - YUKARI/AŞAĞI)
+            // 9. drawRope Fonksiyonu (Enine Dalga - YUKARI/AŞAĞI)
             function drawRope(A_cm, k, omega) {
                 ctx.beginPath();
                 ctx.strokeStyle = '#00c853'; 
@@ -463,6 +428,7 @@
                 }
                 ctx.stroke();
 
+                // Kırmızı noktaları çiz
                 ctx.fillStyle = '#d50000'; 
                 for (const x_cm of dotPositionsCm) {
                     const x_pixel = x_cm * pixelsPerCmX; 
@@ -475,63 +441,10 @@
                 }
             }
 
-            // 11. drawParticles Fonksiyonu (Boylamsal Dalga - SAĞA/SOLA)
-            function drawParticles(A_cm, k, omega) {
-                // Yeşil parçacıkları çiz
-                ctx.fillStyle = '#00c853';
-                for (const p of particles) {
-                    // YATAY yer değiştirme için BÜYÜK (sabit) genliği kullan
-                    const x_displacement_cm = getWaveOscillation(p.x_cm, elapsedTime, k, omega) * LONGITUDINAL_DISPLACEMENT_AMP_CM;
-                    const x_cm_new = p.x_cm + x_displacement_cm;
-                    
-                    const x_pixel = x_cm_new * pixelsPerCmX;
-                    const y_pixel = p.y_pixel_equilibrium;
-                    
-                    ctx.beginPath();
-                    ctx.arc(x_pixel, y_pixel, 3, 0, 2 * Math.PI);
-                    ctx.fill();
-                }
-
-                // Kırmızı noktaları çiz
-                ctx.fillStyle = '#d50000';
-                for (const x_cm of dotPositionsCm) {
-                    // YATAY yer değiştirme için BÜYÜK (sabit) genliği kullan
-                    const x_displacement_cm = getWaveOscillation(x_cm, elapsedTime, k, omega) * LONGITUDINAL_DISPLACEMENT_AMP_CM;
-                    const x_cm_new = x_cm + x_displacement_cm;
-                    
-                    const x_pixel = x_cm_new * pixelsPerCmX;
-                    const y_pixel = centerY;
-                    
-                    ctx.beginPath();
-                    ctx.arc(x_pixel, y_pixel, 6, 0, 2 * Math.PI);
-                    ctx.fill();
-                }
-
-                // Mavi kesikli çizgiyi (Grafik) çiz
-                ctx.beginPath();
-                ctx.strokeStyle = '#007bff';
-                ctx.lineWidth = 2;
-                ctx.setLineDash([5, 5]);
-                
-                let first_x_cm = 0 / pixelsPerCmX;
-                // Grafik için slider'daki genliği (A_cm) kullan
-                let first_y_displacement_cm = getWaveOscillation(first_x_cm, elapsedTime, k, omega) * A_cm;
-                ctx.moveTo(0, centerY - (first_y_displacement_cm * pixelsPerCmY));
-
-                for (let x_pixel = 1; x_pixel <= canvas.width; x_pixel++) {
-                    let x_cm = x_pixel / pixelsPerCmX; 
-                    let y_displacement_cm = getWaveOscillation(x_cm, elapsedTime, k, omega) * A_cm;
-                    ctx.lineTo(x_pixel, centerY - (y_displacement_cm * pixelsPerCmY));
-                }
-                ctx.stroke();
-                ctx.setLineDash([]);
-            }
-
-            // 12. Başlangıç Fonksiyonu
+            // 10. Başlangıç Fonksiyonu
             function initializeApp() {
                 checkResize();
                 calculateAndUpdateUI_fromInputs();
-                initializeParticles();
                 updateActiveButton(realTimeButton);
                 requestAnimationFrame(draw);
             }
@@ -541,4 +454,5 @@
         });
     </script>
 </body>
+
 </html>
